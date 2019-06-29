@@ -1,0 +1,26 @@
+
+<div class="row heading">
+    <div class="col-lg-12">
+    <h3>Your assigned to -- <span>{{ assignment.exam.name }}</span> &nbsp;&nbsp;&nbsp;&nbsp; Assignment Status - <span>{{ assignment.get_status_display }}<span>&nbsp;&nbsp;&nbsp;&nbsp;
+    Exam Status - <span>{{ assignment.get_exam_status_display|default_if_none:"---" }}</span> </h3></br>
+    </div>
+</div>
+{% if answer_sheet %}
+<ol>
+    <form action="" method="post">
+        {% csrf_token %}
+        {% for data in answer_sheet %}
+        <h3><li>{{ data.question.question_text }}</li></h3>
+        {% if data.question.get_question_type_display == 'Choice' %}
+        <h4>Applicant Answer is: <span>{{ data.answer|default_if_none:"---" }}</span></h4>
+        <h4>Correct Answer is: <span>{{ data.question.answer|default_if_none:"---" }}</span></h4>
+        {% else %}
+        <h4>Applicant Answer is: <span>{{ data.answer_text|default_if_none:"---" }}</span></h4>
+        <h4>Correct Answer is: <span>{{ data.question.answertext.first.answer|default_if_none:"---" }}</span></h4>
+        {% endif %}
+        {% endfor %}
+    </form>
+</ol>
+{% else %}
+<h3 id="menu_heading">Answer sheet not available.</h3>
+{% endif %}

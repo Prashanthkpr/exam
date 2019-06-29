@@ -1,0 +1,144 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<div class="col-lg-12 filters-row no-padding-on-mobile">
+<h4>Questions <span class="glyphicon glyphicon-filter"></span></h4>
+<form id="filter_form"class="form-inline" method="post" accept-charset="utf-8">
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile" style="padding-right: 15px;">
+<label class="float-right" for="id_question_type">Question Type</label>
+<select class="form-control selectpicker" data-live-search="true" id="id_group" name="question-type">
+<option value="" selected>---</option>
+{% for type in question_type %}
+<option value="{{ type.0 }}">{{ type.1 }}</option>
+
+{% endfor %}
+</select>
+</div>
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile" style="padding-right:10px;">
+<label class="float-right" for="id_question_tag">Question Tag</label>
+<select class="form-control selectpicker" data-live-search="true" id="id_group" name="question-tags" multiple>
+{% for tag in tags %}
+<option value="{{ tag }}">{{ tag }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="no-padding-left col-lg-3 form-group no-padding-on-mobile" style="padding-right:10px;">
+<label class="float-right" for="id_question_description">Question </label>
+<input class="form-control" type="text" id="id_question_description" name="question-description" value="">
+<span>
+<button id="id_search" class="btn btn-warning form-control questions-search" type="submit">
+	<span class="glyphicon glyphicon-search"></span>
+</button>
+</span>
+</div>
+</form>
+</div>
+
+<div class="container" id="ajaxbody">
+
+<a style="float:right;" href="{% url 'exam:admin-question-create' %}">Add Question</a>
+{% if questions_list %}
+<table class="table">
+<thead>
+	<tr>
+		<th>
+			Question Type
+		</th>
+		<th>
+			Question Tags
+		</th>
+		<th>
+			Question Description
+		</th>
+		<th>
+			Action
+		</th>
+	</tr>
+</thead>
+<tbody id="tbodyid">
+	{% for question in questions_list %}
+	<tr>
+		<td><span class="td_question_type">{{ question.get_question_type_display }}</span></td>
+		<td><span class="td_question_tag">{% if question.tags.all %}
+			{% for tag in question.tags.all %}
+			{{ tag }}&nbsp;,
+			{% endfor %}
+			{% else %}
+			<h4>---</h4>
+			{% endif %}
+		</span></td>
+		<td><span class="td_question_description"><a name="question.id" href="{% url 'exam:admin-question-update' id=question.id %}">{{ question.question_text }}</a></td>
+		<td><button class="btn btn-link delete-button" type="submit" data-question-id="{{ question.id }}" ><span class="glyphicon glyphicon-trash"></span></button></td>
+
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+{% else %}
+<h3 id="menu_heading">No Questions are availabale</h3>
+{% endif %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+	function titleCase(str) {
+  		return str.toLowerCase().split(' ').map(function(word) {
+    	return word.replace(word[0], word[0].toUpperCase());
+  		}).join(' ');
+	}
+
+    $('.delete-button').click(function(e) {
+        e.preventDefault()
+        var r = confirm('Are you sure want to delete ?.');
+        var data_question_id = $(this).attr('data-question-id');
+        var csrf_token = $('input[name="csrfmiddlewaretoken"]').val()
+        if (r == true) {
+            $('.loading').show();
+            $.post('{% url "exam:admin-question-delete" %}', {
+                'data_question_id': data_question_id,
+                'csrfmiddlewaretoken': csrf_token,
+            }, function(data) {
+				window.location='.'
+
+            });
+
+        } else {
+
+            return false;
+        }
+
+    });
+
+    $('.questions-search').click(function(event){
+    	event.preventDefault()
+        	$.ajax({
+            url: '{% url "exam:admin-questions-filter" %}',
+            data: $('#filter_form').serialize(),
+            method: "POST",
+            success: function(data) {
+           		var $tr = $(".table").find('tr:last').clone(true)
+                $("#tbodyid").empty()
+            	var data_array=data['questions']
+            	console.log(data_array)
+            	for(item in data_array){
+	          		var question_type = titleCase(data_array[item]['question_type'])
+	          		var question_tag = data_array[item]['tags']
+	          		var question_description = data_array[item]['question_text']
+	          		$("#tbodyid").append($tr)
+	          		$(".table").find('tr:last .td_question_type').text(question_type)
+	          		$(".table").find('tr:last .td_question_tag').text(question_tag)
+	          		$(".table").find('tr:last .td_question_description').text(question_description)
+	          		var $tr = $(".table").find('tr:last').clone(true)
+          		}
+
+            }
+        })
+
+    });
+
+});
+</script>
+</div>
+
+{% endblock %}

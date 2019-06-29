@@ -1,0 +1,168 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<div class="col-lg-12 filters-row no-padding-on-mobile">
+<h4>Applicants <span class="glyphicon glyphicon-filter"></span></h4>
+<form id="filter_form"class="form-inline" method="post" accept-charset="utf-8">
+<div class="col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_email">Email</label>
+<input class="form-control" type="text" id="id_email" name="email" value="">
+</div>
+<div class="col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_first_name">First Name</label>
+<input class="form-control" type="text" id="id_first_name" name="first-name" value="">
+</div>
+<div class="col-lg-2 form-group no-padding-on-mobile" >
+<label class="float-right" for="id_last_name">Last Name</label>
+<input class="form-control" type="text" id="id_last_name" name="last-name" value="">
+</div>
+<div class="col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_group">Group</label>
+<select class="form-control selectpicker" data-live-search="true" id="id_group" name="group">
+<option value="" selected>---</option>
+<option value="None">None</option>
+{% for group in groups %}
+<option value="{{ group.id }}">{{ group }}</option>
+{% endfor %}
+</select>
+</div>
+<div class=" col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_active">Is Active</label>
+<select class="form-control selectpicker" id="id_active" name="active">
+<option value="" selected>---</option>
+<option value="True">Yes</option>
+<option value="False">No</option>
+</select>
+<span >
+<button id="id_search" class="btn btn-warning form-control applicants-search" type="submit">
+	<span class="glyphicon glyphicon-search"></span>
+</button>
+</span>
+</div>
+</form>
+</div>
+
+<div class="container" id="ajaxbody">
+<form action="" method="POST" accept-charset="utf-8">
+{% csrf_token %}
+<a style="float:right;" href="{% url 'exam:admin-applicant-create' %}">Add Applicant</a></br>
+{% if applicant_list %}
+<table class="table">
+<thead>
+
+	<tr>
+		<th>
+			Email
+		</th>
+		<th>
+			First Name
+		</th>
+		<th>
+			Last Name
+		</th>
+		<th>
+			Group
+		</th>
+		<th>
+			Is Active
+		</th>
+		<th>
+			Action
+		</th>
+	</tr>
+</thead>
+<tbody id="tbodyid">
+	{% for applicant in applicant_list %}
+	<tr>
+		<td><span class="td_email"><a href="{% url "exam:admin-applicant-update" %}?email={{ applicant.email }}">{{ applicant.email }}</a><span></td>
+		<td><span class="td_first_name">{{ applicant.first_name|default_if_none:"---" }}<span></td>
+		<td><span class="td_last_name">{{ applicant.last_name |default_if_none:"---" }}</span></td>
+		<td><span class="td_group">{{ applicant.groups.all.first|default_if_none:None }}</td>
+		<td><span class="td_active">{% if applicant.is_active is True %} Yes {% else %} No {% endif %}</span></td>
+		<td><button class="btn btn-link delete-button" type="submit" data-applicant-id="{{ applicant.id }}" ><span class="glyphicon glyphicon-trash"></span></button></td>
+
+	</tr>
+	{% endfor %}
+	</tbody>
+</table>
+{% else %}
+<h2 id="menu_heading">No applicants are available</h2>
+{% endif %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+	function titleCase(str) {
+  		return str.toLowerCase().split(' ').map(function(word) {
+    	return word.replace(word[0], word[0].toUpperCase());
+  		}).join(' ');
+	}
+
+    $('.delete-button').click(function(e) {
+        e.preventDefault()
+        var r = confirm('Are you sure want to delete ?.');
+        var data_applicant_id = $(this).attr('data-applicant-id');
+        var csrf_token = $('input[name="csrfmiddlewaretoken"]').val()
+        if (r == true) {
+        	$('.loading').show();
+            $.post('{% url "exam:admin-applicant-delete" %}', {
+                'data_applicant_id': data_applicant_id,
+                'csrfmiddlewaretoken': csrf_token,
+            }, function(data) {
+				window.location='.'
+
+
+            });
+
+        } else {
+
+            return false;
+        }
+
+    });
+
+    $('.applicants-search').click(function(event){
+    	event.preventDefault()
+        	$.ajax({
+            url: '{% url "exam:admin-applicants-filter" %}',
+            data: $('#filter_form').serialize(),
+            method: "POST",
+            success: function(data) {
+           		var $tr = $(".table").find('tr:last').clone(true)
+                $("#tbodyid").empty()
+            	var data_array=data['applicants']
+            	for(item in data_array){
+	          		var email = data_array[item]['email']
+	          		var first_name = data_array[item]['first_name']
+	          		var last_name = data_array[item]['last_name']
+	          		var group = data_array[item]['groups__name']
+	          		var active = data_array[item]['is_active']
+	          		if(active==true){
+	          			active='Yes'
+	          		}
+	          		else{
+	          			active='No'
+	          		}
+	          		if (!group){
+	          			group="None"
+	          		}
+	          		$("#tbodyid").append($tr)
+	          		$(".table").find('tr:last .td_email').text(email)
+	          		$(".table").find('tr:last .td_first_name').text(first_name)
+	          		$(".table").find('tr:last .td_last_name').text(last_name)
+	          		$(".table").find('tr:last .td_group').text(group)
+	          		$(".table").find('tr:last .td_active').text(active)
+	          		var $tr = $(".table").find('tr:last').clone(true)
+          		}
+
+            }
+        })
+
+    });
+
+});
+</script>
+</div>
+
+{% endblock %}

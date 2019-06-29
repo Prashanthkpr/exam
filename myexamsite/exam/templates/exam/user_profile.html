@@ -1,0 +1,28 @@
+
+{% extends 'exam/applicant-base.html' %}
+
+{% block content %}
+
+<h2 id="menu_heading">User Profile</h2>
+{% if success %}
+	<h4 id="heading_info">Changes Saved Successfully!</h4>
+{% endif %}
+<form class="form-horizontal inputForm" method="post" action="">
+{% csrf_token %}
+{% for field in user_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-4">
+		{{ field }}
+		<p>{{ field.errors }}</p>
+		</div>
+    </div>
+{% endfor %}
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <button type="submit" class="btn btn-success">Save Changes</button>&nbsp;&nbsp;&nbsp;
+        <a class="btn btn-default" href= "{% url 'exam:index' %}">Back</a>
+      </div>
+    </div>
+  </form>
+  {% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'exam/base.html' %}
+
+{% block title %}{{ block.super }} || Registration {% endblock %}
+
+{% block content %}
+<h2 id="menu_heading">Register</h2>
+	{% if success %}
+		<h4 id="heading_info">Registered Successfully!</h4>
+	{% endif %}
+	<form method="POST" action=".">
+		{% csrf_token %}
+		{{ register_form.as_p }}
+		<button class="btn btn-success" type="submit">Register</button>
+		<button class="btn btn-default" type="reset">reset</button>
+	</form>
+	<h4>Already Registered?. <a href="{% url 'exam:login-user' %}">Login</a></h4>
+<script >
+
+</script>
+
+{% endblock %}

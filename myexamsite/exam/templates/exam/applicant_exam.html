@@ -1,0 +1,154 @@
+{% load app_filters %}
+<div class="container-fluid">
+    <div class="heading">
+        <div class="col-lg-12">
+            <button id="submit" attempt="{{ attempt }}" type="submit" class="btn btn-success submit-button"> Submit</button>
+            <h3>Exam Name - <span>{{ exam.name }}</span>&nbsp;&nbsp;&nbsp;&nbsp; Assignment Status - <span>{{ status }}</span>
+      <p style="float:right;" id="clockdiv"></p>
+    </h3>
+        </div>
+    </div>
+    </br>
+    <div class="row  questions_form">
+        {% if question_list %}
+        <form method="POST" action="" enctype="multipart/form-data" id="myform" class="myform">
+            {% csrf_token %}
+            <input type="hidden" name="assignment_id" value="{{ assignment_id }}" id="assignment_id">
+            {% for question in question_list %}
+              <div class="col-lg-12  question-row   {% if forloop.counter == 1 %}{% else %}hidden{% endif %}" id="id_question_{{ forloop.counter }}">
+                  <div class="col-lg-8 question " id="question" style="height:50%">
+                      <h4>{{ forloop.counter}} . {{ question.question_text }}</h4> {% if question.hint %}</br>
+                      <small style="font-style:italic;">(Hint: {{ question.hint }})</small> {% endif %}</br>
+                      {% if question.attachments.all %}
+                      {% for file in question.attachments.all %} {% if file.attachment.url|split_string in extension.image %}
+                      <img src="{{ file.attachment.url }}" alt="{{ file.attachment.url }}" height="250" width="auto"></br>
+                      {% else %}
+                      <span>{{ file.name }}</span>&nbsp;&nbsp;<a href="{{ file.attachment.url }}" target="_new" class="btn btn-info btn-download" id="download">View File</a> {% endif %}
+                      {% endfor %}
+                      {% endif %}
+                  </div>
+                  <div class="col-lg-4 answer" style="height:50%">
+                      {% if question.question_type == 'choice' %} {% for choice in question.choice_set.all %}
+                      <input type="radio" name="choice{{ question.id }}" id="choice{{ forloop.counter }}" value="{{ choice.id }}" />
+                      <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label>
+                      <br /> {% endfor %} {% else %}
+                      <textarea class="text_type" style="" name="choice{{ question.id }}" id="choice{{ forloop.counter }}" value="{{ choice.id }}" placeholder="Write your answer here."></textarea>
+                     {% endif %}
+                  </div>
+
+                      <div class="col-lg-12 text-align-right">
+                          {% if not forloop.first %}
+                          <button class="btn btn-info  prev-question">
+                              < Prev </button>
+                                  {% endif %}
+                                  <button class="btn btn-default clear-answer"> Clear </button>
+                                  {% if not forloop.last %}
+                                  <button class="btn btn-info next-question">Next ></button>
+                                  {% endif %}
+
+                  </div>
+                </div>
+            {% endfor %}
+        </form>
+        {% else %}
+        <p id="menu_heading">No Questions are available.</p>
+        {% endif %}
+    </div>
+</div>
+
+{# next  button#}
+<script type="text/javascript">
+
+TIME_OUT=false
+$('button.next-question').click(function(e) {
+    e.preventDefault()
+    $(this).closest('div.question-row').addClass('hidden').next().removeClass('hidden')
+});
+
+{# prev button #}
+
+$('button.prev-question').click(function(e) {
+    e.preventDefault()
+    $(this).closest('div.question-row').addClass('hidden').prev().removeClass('hidden')
+});
+
+
+{# clear button #}
+
+$('button.clear-answer').click(function(e) {
+    e.preventDefault()
+    var type = $(this).parents('.question-row').find(':input').attr('type');
+    if (type == 'radio'){
+      $(this).parents('.question-row').find(':radio').prop('checked', false);
+    }
+    else{
+      $(this).parents('.question-row').find(':text').val("")
+    }
+});
+
+{# timeout #}
+
+var time_in_minutes = ({{ time_left }})/60;
+var current_time = Date.parse(new Date());
+var deadline = new Date(current_time + time_in_minutes * 60 * 1000);
+
+
+function time_remaining(endtime) {
+    var t = Date.parse(endtime) - Date.parse(new Date());
+    var seconds = Math.floor((t / 1000) % 60);
+    var minutes = Math.floor((t / 1000 / 60) % 60);
+    var hours = Math.floor((t / (1000 * 60 * 60)) % 24);
+    var days = Math.floor(t / (1000 * 60 * 60 * 24));
+    return { 'total': t, 'days': days, 'hours': hours, 'minutes': minutes, 'seconds': seconds };
+}
+
+function run_clock(id, endtime) {
+    var clock = document.getElementById(id);
+
+    function update_clock() {
+        var t = time_remaining(endtime);
+        clock.innerHTML = 'Time Left - ' + t.minutes + ' : ' + t.seconds;
+        if (t.total <= 0) {
+            clearInterval(timeinterval);
+            TIME_OUT=true
+            document.getElementById("submit").click();
+            return TIME_OUT
+        }
+    }
+    update_clock(); // run function once at first to avoid delay
+    var timeinterval = setInterval(update_clock, 1000);
+}
+run_clock('clockdiv', deadline);
+
+{# submit button #}
+
+$(document).ready(function() {
+    $('button.submit-button').click(function(e) {
+        e.preventDefault()
+       
+        if (TIME_OUT==false){
+        var r = confirm('Are you sure want to Submit ?.');
+      }
+      else{
+        var r=true
+      }
+        if (r==true)
+        {
+        var csrfmiddlewaretoken = $("#myform").find("input[name='csrfmiddlewaretoken']").val();
+        var formData = $('#myform').serialize();
+        var assignment_id = $('#myform').find("input[name='assignment_id']").val();
+        $.ajax({
+            url: '{% url "exam:applicant-result" %}',
+            data: $('#myform').serialize(),
+            method: "POST",
+            success: function(data) {
+                $("#ajaxbody").html(data);
+            }
+        })}
+        else{
+          return false
+        }
+    });
+});
+
+</script>

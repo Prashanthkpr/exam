@@ -1,0 +1,170 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<div class="col-lg-12 filters-row no-padding-on-mobile">
+<h4>Assignments <span class="glyphicon glyphicon-filter"></span></h4>
+<form id="filter_form"class="form-inline" method="post" accept-charset="utf-8">
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile" style="padding-right: 15px;">
+<label class="float-right" for="id_applicant">Applicant</label>
+<input class="form-control" type="text" id="id_applicant" name="applicant" value="">
+</div>
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile" style="padding-right:10px;">
+<label class="float-right" for="id_exam_name">Exam Name</label>
+<input class="form-control" type="text" id="id_exam_name" name="exam-name" value="">
+</div>
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_status">Status</label>
+<select class="form-control selectpicker" id="id_status" name="status">
+<option value="" selected>---</option>
+{% for state in status %}
+<option value="{{ state.0 }}">{{ state.1 }}</option>
+
+{% endfor %}
+</select>
+</div>
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_score">Score</label>
+<input class="form-control" type="text" id="id_score" name="score" value="">
+</div>
+<div class="no-padding-left col-lg-2 form-group no-padding-on-mobile">
+<label class="float-right" for="id_result">Result</label>
+<select class="form-control selectpicker" id="id_result" name="exam-result">
+<option value="" selected>---</option>
+{% for state in exam_status %}
+<option value="{{ state.0 }}">{{ state.1 }}</option>
+
+{% endfor %}
+</select>
+<span >
+<button id="id_search" class="btn btn-warning form-control assignments-search" type="submit">
+	<span class="glyphicon glyphicon-search"></span>
+</button>
+</span>
+</div>
+</form>
+</div>
+
+<div class="container" id="ajaxbody">
+
+<form action="" method="POST" accept-charset="utf-8">
+{% csrf_token %}
+<a style="float:right;" href="{% url 'exam:admin-assignment-create' %}">Add Assignment</a>
+</form>
+</br>
+{% if assignment_list %}
+<table class="table">
+	<thead>
+	<tr>
+		<th>
+			Applicant
+		</th>
+		<th>
+			Exam Name
+		</th>
+		<th>
+			Status
+		</th>
+		<th>
+			Score
+		</th>
+		<th>
+			Result
+		</th>
+		<th>
+			Action
+		</th>
+
+	</tr>
+</thead>
+<tbody id="tbodyid">
+	{% for assignment in assignment_list %}
+	<tr>
+		<td><span class="td_applicant"><a href="{% url 'exam:admin-assignment-update' id=assignment.id %}">{{ assignment.user }}</a></span></td>
+		<td><span class="td_exam_name">{{ assignment.exam }}</span></td>
+		<td><span class="td_status">{{ assignment.get_status_display }}</span></td>
+		<td><span class="td_score">{{ assignment.score }}</span></td>
+		<td><span class="td_result">{{ assignment.get_exam_status_display|default_if_none:"---" }}</span></td>
+		<td><button class="btn btn-link delete-button" type="submit" data-assignment-id="{{ assignment.id }}" ><span class="glyphicon glyphicon-trash"></span></button></td>
+
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+{% else %}
+<h2 id="menu_heading">No Assignments are available</h2>
+{% endif %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+	function titleCase(str) {
+  		return str.toLowerCase().split(' ').map(function(word) {
+    	return word.replace(word[0], word[0].toUpperCase());
+  		}).join(' ');
+	}
+
+    $('.delete-button').click(function(e) {
+        e.preventDefault()
+        var r = confirm('Are you sure want to delete ?.');
+        var data_assignment_id = $(this).attr('data-assignment-id');
+        var csrf_token = $('input[name="csrfmiddlewaretoken"]').val()
+        if (r == true) {
+        	$('.loading').show();
+            $.post('{% url "exam:admin-assignment-delete" %}', {
+                'data_assignment_id': data_assignment_id,
+                'csrfmiddlewaretoken': csrf_token,
+            }, function(data) {
+				window.location='.'
+
+            });
+        } else {
+           return false;
+        }
+
+    });
+
+    $('.assignments-search').click(function(event){
+    	event.preventDefault()
+        	$.ajax({
+            url: '{% url "exam:admin-assignments-filter" %}',
+            data: $('#filter_form').serialize(),
+            method: "POST",
+            success: function(data) {
+           		var $tr = $(".table").find('tr:last').clone(true)
+                $("#tbodyid").empty()
+            	var data_array=data['assignments']
+            	console.log(data_array)
+            	for(item in data_array){
+	          		var first_name = data_array[item]['user__first_name']
+	          		var last_name = data_array[item]['user__last_name']
+	          		var applicant =first_name.concat("  ",last_name)
+	          		var exam_name = data_array[item]['exam__name']
+	          		var status = titleCase(data_array[item]['status'])
+	          		var score = data_array[item]['score']
+	          		var result = data_array[item]['exam_status']
+	          		if (result){
+	          			result=titleCase(result)
+	          		}
+	          		else{
+	          			result='---'
+	          		}
+	          		$("#tbodyid").append($tr)
+	          		$(".table").find('tr:last .td_applicant').text(applicant)
+	          		$(".table").find('tr:last .td_exam_name').text(exam_name)
+	          		$(".table").find('tr:last .td_status').text(status)
+	          		$(".table").find('tr:last .td_score').text(score)
+	          		$(".table").find('tr:last .td_result').text(result)
+	          		var $tr = $(".table").find('tr:last').clone(true)
+          		}
+
+            }
+        })
+
+    });
+
+});
+</script>
+</div>
+
+{% endblock %}

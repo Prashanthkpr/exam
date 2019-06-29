@@ -1,0 +1,75 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<h2 id="menu_heading">Applicant Updation</h2>
+<form class="form-horizontal inputForm" method="post" action="">
+{% csrf_token %}
+{% for field in applicant_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-4">
+		{{ field }}
+		<p>{{ field.errors }}</p>
+		</div>
+    </div>
+{% endfor %}
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <button type="submit" class="btn btn-success">Save Changes</button>&nbsp;&nbsp;&nbsp;
+        <a class="btn btn-default" href="{% url 'exam:admin-applicants' %}">Back</a>
+      </div>
+    </div>
+  </form>
+
+{% if assignment_list %}
+<h3 id="menu_heading">Assignments</h3>
+<table class="table">
+  <tr>
+    <th>
+      No.
+    </th>
+    <th>
+      Exam Name
+    </th>
+    <th>
+      Status
+    </th>
+    <th>
+      Score
+    </th>
+    <th>
+      Result
+    </th>
+    <th>
+      Action
+    </th>
+
+  </tr>
+  {% for assignment in assignment_list %}
+  <tr>
+    <td><a href="{% url 'exam:admin-assignment-update' id=assignment.id %}">{{ forloop.counter }}</a></td>
+    <td><a href="{% url 'exam:admin-exam-update' id=assignment.exam.id %}">{{ assignment.exam }}</a></td>
+    <td>{{ assignment.get_status_display }}</td>
+    <td>{{ assignment.score }}</td>
+    <td>{{ assignment.get_exam_status_display|default_if_none:"---" }}</td>
+    <td><a href="{% url 'exam:admin-assignment-result' id=assignment.id %}">Answer Sheet</a></td>
+
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<h3 id="menu_heading">No Assignments are available</h3>
+{% endif %}
+
+  <script type="text/javascript">
+$("form").on("reset", function () {
+                var that = this;
+                setTimeout(function () {
+                    $(that).find("select").trigger("change");
+                }, 1);
+            });
+
+</script>
+
+  {% endblock %}

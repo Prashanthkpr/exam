@@ -1,0 +1,121 @@
+{% extends 'exam/admin-base.html' %}
+
+
+{% block content %}
+
+<div class="col-lg-12 filters-row no-padding-on-mobile">
+<h4>Exams <span class="glyphicon glyphicon-filter"></span></h4>
+<form id="filter_form"class="form-inline" method="post" accept-charset="utf-8">
+<div class="no-padding-left col-lg-3 form-group no-padding-on-mobile" style="padding-right: 15px;">
+<label class="float-right" for="id_exam_name">Exam Name</label>
+<input class="form-control" type="text" id="id_exam_name" name="exam-name" value="">
+</div>
+<div class="no-padding-left col-lg-3 form-group no-padding-on-mobile" style="padding-right:10px;">
+<label class="float-right" for="id_question_description">Question</label>
+<input class="form-control" type="text" id="id_question_description" name="question-description" value="">
+<span>
+<button id="id_search" class="btn btn-warning form-control exams-search" type="submit">
+	<span class="glyphicon glyphicon-search"></span>
+</button>
+</span>
+</div>
+</form>
+</div>
+
+
+<div class="container" id="ajaxbody">
+
+<form action="" method="POST" accept-charset="utf-8">
+{% csrf_token %}
+<a style="float:right;" href="{% url 'exam:admin-exam-create' %}">Add Exam</a></br>
+{% if exam_list %}
+<table class="table">
+<thead>
+	<tr>
+		<th>
+			Exam Name
+		</th>
+		<th>
+			Questions
+		</th>
+		<th>
+			Action
+		</th>
+
+	</tr>
+</thead>
+<tbody id="tbodyid">
+	{% for exam in exam_list %}
+	<tr>
+		<td><span class="td_exam_name"><a name="exam.id" href="{% url 'exam:admin-exam-update' id=exam.id %}">{{ exam.name }}</a></span></td>
+		<td><span class="td_question_description">{% for question in exam.question_paper.all %}
+			{% for tag in question.tags.all %}
+			{{ tag }}&nbsp;,
+			{% endfor %}
+			{% endfor %}
+		</span></td>
+		<td><button class="btn btn-link delete-button" type="submit" data-exam-id="{{ exam.id }}" ><span class="glyphicon glyphicon-trash"></span></button></td>
+
+	</tr>
+	{% endfor %}
+</tbody>
+</table>
+{% else %}
+<h3 id="menu_heading">No Exam are availabale</h3>
+{% endif %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+    $('.delete-button').click(function(e) {
+        e.preventDefault()
+        var r = confirm('Are you sure want to delete ?.');
+        var data_exam_id = $(this).attr('data-exam-id');
+        var csrf_token = $('input[name="csrfmiddlewaretoken"]').val()
+        if (r == true) {
+            $('.loading').show();
+            $.post('{% url "exam:admin-exam-delete" %}', {
+                'data_exam_id': data_exam_id,
+                'csrfmiddlewaretoken': csrf_token,
+            }, function(data) {
+				window.location='.'
+
+            });
+
+        } else {
+
+            return false;
+        }
+
+    });
+
+    $('.exams-search').click(function(event){
+    	event.preventDefault()
+        	$.ajax({
+            url: '{% url "exam:admin-exams-filter" %}',
+            data: $('#filter_form').serialize(),
+            method: "POST",
+            success: function(data) {
+           		var $tr = $(".table").find('tr:last').clone(true)
+                $("#tbodyid").empty()
+            	var data_array=data['exams']
+            	console.log(data_array)
+            	for(item in data_array){
+	          		var exam_name = data_array[item]['name']
+	          		var question_tags= data_array[item]['question_paper']
+	          		$("#tbodyid").append($tr)
+	          		$(".table").find('tr:last .td_question_type').text(exam_name)
+	          		$(".table").find('tr:last .td_question_description').text(question_tags)
+	          		var $tr = $(".table").find('tr:last').clone(true)
+          		}
+
+            }
+        })
+
+    });
+
+});
+</script>
+</div>
+
+{% endblock %}

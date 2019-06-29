@@ -1,0 +1,66 @@
+
+{% extends 'exam/applicant-base.html' %}
+
+{% block title %} {{ block.super }} || Home {% endblock %}
+
+ {% block content %}
+
+<h3 id="menu_heading">Assignment Details</h3>
+ {% if assignments %}
+<table class="table">
+    <tr>
+        <th>
+            Exam Name
+        </th>
+        <th>
+            Score
+        </th>
+        <th>
+            Status
+        </th>
+        <th>
+            Result
+        </th>
+        <th>
+            Action
+        </th>
+    </tr>
+    {% for assignment in assignments %}
+    <tr>
+        <td>{{ assignment.exam }}</td>
+        <td>{{ assignment.score }}</td>
+        <td>{{ assignment.get_status_display }}</td>
+        <td>{{ assignment.get_exam_status_display|default_if_none:"---" }}</td>
+        {% if assignment.status == 'pending' and not assignment.attempts.exists %}
+       <td><button class="btn btn-info exam_action" data-assignment-id="{{ assignment.id }}" data-exam-name-slug="{{ assignment.exam.name_slug }}" >Write Exam</button></td>
+        {% elif assignment.status == 'pending' and assignment.attempts.exists %}
+       <td><button class="btn btn-info exam_action" data-assignment-id="{{ assignment.id }}" data-exam-name-slug="{{ assignment.exam.name_slug }}">Continue</button></td>
+        {% else %}
+        <td>Completed</td>
+        {% endif %}
+    </tr>
+    {% endfor %} {% else %}
+    <h4 id="menu_heading">No Assignments are available</h4> {% endif %}
+</table>
+
+<script>
+$(document).ready(function(){
+
+    $("button.exam_action").click(function(e){
+    	e.preventDefault()
+    	var data_assignment_id=$(this).attr('data-assignment-id')
+    	var data_exam_name_slug=$(this).attr('data-exam-name-slug')
+    	var csrf_token=$('input[name="csrfmiddlewaretoken"]').val()
+       $.post('{% url "exam:applicant-exam" %}',{
+       	'data_assignment_id': data_assignment_id,
+       	'data_exam_name_slug': data_exam_name_slug,
+       	'csrfmiddlewaretoken': csrf_token,
+       }, function(data) {
+        $('#ajaxbody').html(data); // append to inner html
+    });
+   });
+});
+</script>
+{% endblock %}
+
+

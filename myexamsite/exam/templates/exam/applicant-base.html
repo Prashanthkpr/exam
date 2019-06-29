@@ -1,0 +1,104 @@
+{% load staticfiles %}
+{% load static %}
+
+<html>
+<head>
+        <title>
+            {% block title %}Brio{% endblock %}
+        </title>
+        <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+       <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <!-- jQuery library -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+      <!-- Boostrap Select picker -->
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/css/bootstrap-select.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
+
+<!-- (Optional) Latest compiled and minified JavaScript translation files -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/i18n/defaults-*.min.js"></script>
+
+ </head>
+ <body>
+  {% csrf_token %}
+<link rel="stylesheet" type="text/css" href="https://code.jquery.com/jquery-3.1.0.min.js">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="{% url 'exam:index' %}">Home</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+    	<li class="dropdown">
+   <a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="glyphicon glyphicon-user"></span> Hello {{ request.user }} <span class="caret"></span></a>
+               <ul id="dropdown" class="dropdown-menu">
+            <li><a href="{% url 'exam:user-profile' %}">View Profile</a></li>
+            <li><button class="logout">Logout</button></li>
+          </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+<div class="container" id="ajaxbody">
+
+  <script type="text/javascript">
+
+$(document).ready(function() {
+  // get current URL path and assign 'active' class
+  var pathname = window.location.pathname;
+  $('.active').removeClass('active');
+  $('.nav > li > a[href="'+pathname+'"]').parent().addClass('active');
+
+  $('.logout').on('click', function(e){
+      e.preventDefault()
+      $.ajax({
+            url: "http://localhost:8080/cp/user/settings/",
+            method: "GET",
+            headers: {
+              "Authorization":"Token 9ed3f57b54379613b4483a2385b7c989617abeaa",
+              // "Access-Control-Allow-Origin": "*"
+            },
+            processData: false,
+            contentType: false,
+            success: function(data) {
+              $("[class$='_errors']").empty()
+                if (data.success==true){
+                }
+                else{
+                  for(name in data.question_errors){
+                    key='.'.concat(name,'_errors')
+                    $(key).append(data.question_errors[name])
+                  }
+                  for(value in data.choice_errors){
+                    key='.'.concat('choice_formset_errors')
+                    $(key).append(data.choice_errors[value])
+                  }
+                  for(value in data.attachment_errors){
+                    for(name in data.attachment_errors[value]){
+                      key='.'.concat(name,'_errors')
+                      $(key).empty()
+                      $(key).append(data.attachment_errors[value][name][0])
+
+                    }
+                  }
+                }
+              }
+        });
+    });
+});
+
+</script>
+{% block content %}
+
+{% endblock %}
+</div>
+</body>

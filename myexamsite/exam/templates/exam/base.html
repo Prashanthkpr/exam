@@ -1,0 +1,26 @@
+{% load staticfiles %}
+{% load static %}
+
+<html>
+    <head>
+        <title>
+            {% block title %}Brio{% endblock %}
+        </title>
+        <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+       <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    </head>
+
+    <body>
+        <div class="container-fluid">
+    <div class="col-lg-8" ></div>
+    <div class="col-lg-4 home_login" >
+        {% block content %}
+
+        {% endblock %}
+    </div>
+  </div>
+    </body>
+</html>
+

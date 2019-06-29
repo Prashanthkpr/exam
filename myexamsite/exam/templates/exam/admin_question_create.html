@@ -1,0 +1,486 @@
+{% extends 'exam/admin-base.html' %}
+
+</div>
+{% block content %}
+
+<h3 id="menu_heading">Create Question</h3></br>
+
+ <div class="row">
+  <div class="col-sm-8">
+
+<form class="form-horizontal questionform" id="question_form" action="" method="POST" accept-charset="utf-8">
+{% for field in question_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-4">
+		{{ field }}
+		<p class="{{ field.name }}_errors">{{ field.errors }}</p>
+		</div>
+    </div>
+{% endfor %}
+<label class="control-label col-sm-2" for="tags">Tags</label>
+<select class="select2 col-sm-4" id="tags" name="tags" multiple>
+  {% for tag in tags %}
+  <option value="{{ tag.name_slug }}">{{ tag.name }}</option>
+
+    {% endfor %}
+    </select>
+</form>
+
+<h4>Attachments</h4>
+ <p class="attachment_formset_errors"></p>
+<form class="form-horizontal attachmentform" id="attachment_form" action="" method="POST" accept-charset="utf-8" enctype="multipart/form-data">
+  {{ attachment_formset.management_form }}
+  <div class="attachmentformset">
+{% for attachment in attachment_formset %}
+<div class="form-group formset_attachment">
+{% for field in attachment %}
+
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ field.errors }}</label>
+      <div class="col-sm-4">
+    {{ field }}
+    <p class='{{ field.name }}_errors'>{{ field.errors }}</p>
+    </div>
+    </div>
+{% endfor %}
+
+<div class="form-group">
+<div class="col-sm-offset-2 col-sm-4 form-delete-button">
+<button class="btn btn-link pull-right" id="id_attachment_delete" name="attachment_delete" type="submit"><span class="glyphicon glyphicon-trash"></span></button>
+</div>
+</div>
+</div>
+{% endfor %}
+</div>
+<div class="form-group">
+<div class="col-sm-offset-4 col-sm-8 form-add-button">
+<button class="btn btn-link attachmentform-add" id="id_attachment_add" name="attachment_add" type="submit">Add Attachment</button>
+</div>
+</div>
+</form>
+
+</div>
+
+ <div class="col-sm-4">
+  <div class="row">
+  <p class="choice_formset_errors"></p>
+<form class="form-horizontal choiceform" id="choice_form" action="" method="POST" accept-charset="utf-8">
+  <div class="choiceformset">
+{{ choice_formset.management_form }}
+{% for field in choice_formset %}
+    <div class="form-group formset_choice">
+      <label class="control-label col-sm-4" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-6">
+        <input type="radio" name='{{ field.choice_text.name }}' id='{{ field.choice_text.name }}' value="" checked>
+    {{ field }}
+ </div>
+    <button class="btn btn-link form-row" id="id_choice_delete" name="choice_delete" type="submit"><span class="glyphicon glyphicon-trash"></span></button>
+  </div>
+{% endfor %}
+</div>
+<div class="form-group">
+<div class="col-sm-offset-8 col-sm-8 form-add-button">
+  <button class="btn btn-link choiceform-add" id="id_choice_add" name="choice_add" type="submit">Add Choice</button>
+</div>
+</div>
+<div class="form-group">
+<div class="col-sm-offset-4 col-sm-10 form-submit-button">
+<a class="btn btn-default" href="{% url 'exam:admin-questions' %}">Back</a>&nbsp;&nbsp;
+<button class="btn btn-default clear-all" type="reset">Clear</button>&nbsp;&nbsp;
+<button class="btn btn-success save-choice" data-type="choice" type="submit">Save</button>&nbsp;&nbsp;
+</div>
+</div>
+</form>
+</div>
+<div class="row hidden">
+<form class="form-horizontal answerform" id="answer_form" action="" method="POST" accept-charset="utf-8">
+
+{% for field in answer_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-4" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-6">
+    {{ field }}
+    <p class="{{ field.name }}_errors">{{ field.errors }}</p>
+    </div>
+    </div>
+{% endfor %}
+ <div class="form-group">
+<div class="col-sm-offset-4 col-sm-10 form-submit-button">
+<a class="btn btn-default" href="{% url 'exam:admin-questions' %}">Back</a>&nbsp;&nbsp;
+<button class="btn btn-default clear-all" type="reset">Clear</button>&nbsp;&nbsp;
+<button class="btn btn-success save-answer" data-type="text" type="submit">Save</button>&nbsp;&nbsp;
+</div>
+</div>
+</form>
+</div>
+
+</div>
+ </div>
+
+
+
+<script type="text/javascript">
+
+{% comment %} clear the selectpicker fields {% endcomment %}
+$(document).ready(function() {
+$("form").on("reset", function () {
+                var that = this;
+                setTimeout(function () {
+                    $(that).find("select").trigger("change");
+                }, 1);
+            });
+          });
+
+{% comment %} selecting the form depending on question type {% endcomment %}
+
+$(document).ready(function() {
+  $("#id_question_type option[value='program']").remove();
+  var value = $('#id_question_type option:selected').val();
+   if (value=='text'){
+    $('.choiceform').closest('div').addClass('hidden')
+    $('.answerform').closest('div.hidden').removeClass('hidden')
+   }
+  $('#id_question_type').on('change',function(){
+  var value = $('#id_question_type option:selected').val();
+   if(value=='choice'){
+    $('.choiceform').closest('div.hidden').removeClass('hidden')
+    $('.answerform').closest('div').addClass('hidden')
+   }
+   else{
+    $('.answerform').closest('div.hidden').removeClass('hidden')
+    $('.choiceform').closest('div').addClass('hidden')
+   }
+});
+});
+
+/* updating choice form elements*/
+function updateElementIndex(el, prefix, ndx) {
+    var id_regex = new RegExp('(' + prefix + '-\\d+)');
+    var replacement = prefix + '-' + ndx;
+    $(el).find(':input').each(function() {
+    var id=$(this).attr('id').replace(id_regex, replacement);
+    var name=$(this).attr('name').replace(id_regex, replacement);
+    $(this).attr('id',id);
+    $(this).attr('name',name);
+    $(this).attr('for',id);
+});
+    $(el).find('label').each(function() {
+        var newFor = $(this).attr('for').replace(id_regex,replacement);
+        $(this).attr('for', newFor);
+    });
+ }
+function DeleteForm(instance,total,prefix,min,max){
+
+        var name=instance.attr('name');
+        instance.parent().find('[type="checkbox"]').prop('checked', true);
+        formset='.formset_'+prefix
+        instance.closest(formset).remove();
+        var i=0;
+        total-=1
+        $('#id_' + prefix + '-TOTAL_FORMS').val(total)
+        $(formset).each(function() {
+          if(i<total){
+                updateElementIndex(this, prefix, i);
+                i++;
+              }
+            });
+        if (total<max){
+          form_add='#id_'+prefix+'_add'
+          $(form_add).show()
+        }
+
+      if (total<=min){
+      if (prefix=='choice'){
+       $("[id$='choice_delete']").hide()
+      }}
+      if (total<=1){
+      if (prefix=='attachment'){
+       $("[id$='attachment_delete']").hide()
+      }
+      }
+    }
+
+function AddForm(instance,total,prefix,min,max,formset,form){
+
+      new_form=formset.clone(true);
+      new_form.find('input[type=text]').val('')
+      new_form.find('input[type=radio]').prop('checked',false);
+      new_form.find('a').remove();
+        form.append(new_form);
+        var total = parseInt($('#id_' + prefix + '-TOTAL_FORMS').val())
+        var i=0;
+      new_form.find(':input').each(function() {
+      var name = $(this).attr('name').replace('-' + (total-1) + '-', '-' + total + '-');
+      var id = 'id_' + name;
+        $(this).attr({'name': name, 'id': id}).val('').removeAttr('checked');
+        $(this).attr('id',id);
+       $(this).attr('name',name);
+        $(this).attr('for',id);
+    });
+      new_form.find('label').each(function() {
+        var total = parseInt($('#id_' + prefix + '-TOTAL_FORMS').val())
+        var newFor = $(this).attr('for').replace('-' + (total-1) + '-','-' + total + '-');
+        $(this).attr('for', newFor);
+    });
+      total+=1
+      $('#id_' + prefix + '-TOTAL_FORMS').val(total);
+    if (total==max){
+          instance.hide()
+        }
+    if (total>min){
+      if (prefix=='choice'){
+       $("[id$='choice_delete']").show()
+      }
+      if (prefix=='attachment'){
+       $("[id$='attachment_delete']").show()
+      }
+      }
+    }
+
+
+$(document).ready(function() {
+
+  $("label[for$='-DELETE']").hide()
+    $("[id$='-DELETE']").hide()
+    $(':radio[name="choice_text"]').click()
+      var choice_prefix='choice'
+      var attachment_prefix='attachment'
+      var choice_min =parseInt($('#id_' + choice_prefix + '-MIN_NUM_FORMS').val());
+      var choice_max =parseInt($('#id_' + choice_prefix + '-MAX_NUM_FORMS').val());
+      var attachment_min =parseInt($('#id_' + attachment_prefix + '-MIN_NUM_FORMS').val());
+      var attachment_max =parseInt($('#id_' + attachment_prefix + '-MAX_NUM_FORMS').val());
+      var choice_total = parseInt($('#id_' + choice_prefix + '-TOTAL_FORMS').val());
+      var attachment_total = parseInt($('#id_' + attachment_prefix + '-TOTAL_FORMS').val());
+      if (choice_total<=choice_min){
+        $("[id$='choice_delete']").hide()
+      }
+      if (attachment_total<=1){
+        $("[id$='attachment_delete']").hide()
+      }
+/* delete choice form*/
+    $("[id$='choice_delete']").click(function(event){
+      event.preventDefault()
+      var total = parseInt($('#id_' + choice_prefix + '-TOTAL_FORMS').val());
+      if(total>choice_min){
+      var bool=confirm('Are you sure want to delete ?.');
+      if(bool==true){
+        var instance=$(this)
+        DeleteForm(instance,total,choice_prefix,choice_min,choice_max);
+        $(':radio[name="choice_text"]').click()
+      }
+      else{
+        return false;
+      }
+    }
+    else{
+      alert('Required minimum '+choice_min+ ' choices')
+    }
+
+    });
+
+/*adding choice form*/
+    $("#id_choice_add").click(function(event){
+      event.preventDefault()
+      var total = parseInt($('#id_' + choice_prefix + '-TOTAL_FORMS').val());
+      if(total<choice_max){
+        formset=$('.formset_choice:last')
+        form=$('.choiceformset')
+        instance=$("#id_choice_add")
+        AddForm(instance,total,choice_prefix,choice_min,choice_max,formset,form);
+ }
+
+    });
+
+    /* delete attachment form*/
+    $("[id$='attachment_delete']").click(function(event){
+      event.preventDefault()
+      var total = parseInt($('#id_' + attachment_prefix + '-TOTAL_FORMS').val());
+      if(total>1){
+      var bool=confirm('Are you sure want to delete ?.');
+      if(bool==true){
+        var instance=$(this)
+        DeleteForm(instance,total,attachment_prefix,attachment_min,attachment_max);
+
+      }
+      else{
+        return false;
+      }
+    }
+
+    });
+
+/*adding attachment form*/
+    $("#id_attachment_add").click(function(event){
+      event.preventDefault()
+      var total = parseInt($('#id_' + attachment_prefix + '-TOTAL_FORMS').val());
+      if(total < attachment_max){
+        formset=$('.formset_attachment:last')
+        form=$('.attachmentformset')
+        instance=$("#id_attachment_add")
+        AddForm(instance,total,attachment_prefix,attachment_min,attachment_max,formset,form);
+      }
+    });
+});
+
+/* radio button value setting*/
+
+$(':radio[name="choice_text"]').change(function() {
+  var name=$(this).closest('div').find('input[type=text]').attr('name')
+  $(this).filter(':checked').attr('value',name);
+});
+
+/*submit choice*/
+$(document).ready(function() {
+    $('button.save-choice').click(function(e) {
+        e.preventDefault()
+        $('.loading').show();
+        formdata=new FormData($("#question_form")[0])
+        var question_data = $("#question_form").serializeArray();
+        var choice_data = $("#choice_form").serializeArray();
+        var attachment_data = $("#attachment_form").serializeArray();
+        for(var i=0;i<attachment_data.length;i++){
+          var key=attachment_data[i]['name']
+          var value=attachment_data[i]['value']
+          formdata.append(key,value)
+        }
+        var total=parseInt($('#id_attachment-TOTAL_FORMS').val());
+        for(var i=0;i<total;i++){
+        id='#id_attachment-'+i+'-attachment'
+        file=$(id)[0].files[0]
+        var name=$(id).attr('name');
+        formdata.append(name,file)
+        }
+        for(var i=0;i<choice_data.length;i++){
+          var key=choice_data[i]['name']
+          var value=choice_data[i]['value']
+          formdata.append(key,value)
+        }
+        $.ajax({
+            url: "{% url 'exam:admin-question-create' %}",
+            data: formdata,
+            method: "POST",
+            processData: false,
+            contentType: false,
+            enctype: 'multipart/form-data',
+            success: function(data) {
+              $("[class$='_errors']").empty()
+                if (data.success==true){
+
+                 window.location=data.url
+                }
+                else{
+                  for(name in data.question_errors){
+                    key='.'.concat(name,'_errors')
+                    $(key).append(data.question_errors[name])
+                  }
+                  for(value in data.choice_errors){
+                    key='.'.concat('choice_formset_errors')
+                    $(key).append(data.choice_errors[value])
+                  }
+                  for(value in data.attachment_errors){
+                    for(name in data.attachment_errors[value]){
+                      key='.'.concat(name,'_errors')
+                      $(key).empty()
+                      $(key).append(data.attachment_errors[value][name][0])
+
+                    }
+                  }
+                }
+              }
+        });
+   $('.loading').hide();
+    });
+});
+
+/*submit answer*/
+$(document).ready(function() {
+    $('button.save-answer').click(function(e) {
+      $('.loading').show();
+        e.preventDefault()
+        formdata=new FormData($("#question_form")[0])
+        var question_data = $("#question_form").serializeArray();
+        var answer_data = $("#answer_form").serializeArray();
+        var attachment_data = $("#attachment_form").serializeArray();
+        for(var i=0;i<attachment_data.length;i++){
+          var key=attachment_data[i]['name']
+          var value=attachment_data[i]['value']
+          formdata.append(key,value)
+        }
+        var total=parseInt($('#id_attachment-TOTAL_FORMS').val());
+        for(var i=0;i<total;i++){
+        id='#id_attachment-'+i+'-attachment'
+        file=$(id)[0].files[0]
+        var name=$(id).attr('name');
+        formdata.append(name,file)
+        }
+        for(var i=0;i<answer_data.length;i++){
+          var key=answer_data[i]['name']
+          var value=answer_data[i]['value']
+          formdata.append(key,value)
+        }
+        $.ajax({
+            url: "{% url 'exam:admin-question-create' %}",
+            data:formdata,
+            method: "POST",
+            enctype: 'multipart/form-data',
+            processData: false,
+            contentType: false,
+            success: function(data) {
+              $("[class$='_errors']").empty()
+                if (data.success==true){
+                 window.location=data.url
+
+                }
+              else{
+                console.log(data.attachment_errors)
+                  for(name in data.question_errors){
+                    $(key).append(data.question_errors[name])
+                  }
+                  for(name in data.answer_errors){
+                    $(key).append(data.answer_errors[name])
+                  }
+                  for(value in data.attachment_errors){
+                    for(name in data.attachment_errors[value]){
+                      key='.'.concat(name,'_errors')
+                      $(key).empty()
+                      $(key).append(data.attachment_errors[value][name][0])
+
+                    }
+                  }
+                }
+              }
+        });
+    $('.loading').hide();
+    });
+});
+
+
+$(document).ready(function() {
+    $('.select2').select2();
+    $('select.select2').select2({
+        tags: true,
+        allowNew: true,
+        multiple: true
+});
+});
+
+</script>
+
+{% endblock %}
+
+
+
+{# new_form.find(':input').each(function() {
+          $(this).val('')
+        var name = $(this).attr('name').replace('-' + (total-1) + '-', '-' + total + '-');
+        var id = 'id_' + name;
+        $(this).attr('name',name)
+        $(this).attr('id',id)
+      });
+        new_form.find('label').each(function() {
+          var name = $(this).attr('for').replace('-' + (total-1) + '-', '-' + total + '-');
+        var id = 'id_' + name;
+        $(this).attr('for',id)
+
+      }); #}

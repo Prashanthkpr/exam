@@ -1,0 +1,199 @@
+body
+{
+   background-repeat: no-repeat;
+   color:#727272;
+
+}
+
+.navbar{
+    border-radius: 0;
+
+    padding:10px;
+
+}
+
+.navbar-brand{
+
+    font-family: 'Satisfy', Butcherman;
+}
+
+/*h1 a {
+    color: #FCA205;
+    text-align: 'center';
+}
+*/
+.page-header {
+    background-color: #ff9400;
+    margin-top: 0;
+    padding: 20px 20px 20px 40px;
+}
+
+/*.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
+    color: #ffffff;
+    font-size: 36pt;
+    text-decoration: none;
+    height: 30px;
+}*/
+
+.content {
+    margin-left: 40px;
+}
+
+/*h2{
+    font-family: 'Arial';
+    text-align: 'center';
+    color :red;
+}
+h1 {
+    font-family: 'Arial';
+    text-align: 'center';
+    color :blue;
+}*/
+
+.date {
+    color: #828282;
+}
+
+.save {
+    float: right;
+}
+
+.post-form textarea, .post-form input {
+    width: 100%;
+}
+
+.top-menu, .top-menu:hover, .top-menu:visited {
+    color: #ffffff;
+    float: right;
+    font-size: 13pt;
+    margin-right: 20px;
+}
+
+
+table {
+        padding: 20px;
+    }
+
+tr:last-child{
+    border-bottom:1px solid #dadada;
+}
+
+.heading > div{
+  padding:10px;
+  border: 1px solid #727272;
+  font-weight: bold;
+}
+
+.next-button >{
+ padding: 20px;
+
+}
+
+.answer{
+    border: 1px solid #727272;
+    padding: 20px;
+    text-align: justify;
+}
+
+.question{
+    border: 1px solid #727272;
+    padding: 20px;
+    text-align: justify;
+    font-size:18px;
+}
+
+
+.submit-button{
+    float:right;
+    margin:10px;
+    padding:10px
+    font-size: 18px;
+}
+
+.text_type{
+
+    padding:1px;
+    margin:1px;
+    height:120px;
+    width:340px;
+}
+
+.text-align-right{
+    text-align:right;
+    border: 1px solid #727272;
+    padding: 15px;
+
+}
+
+.container{
+
+border:1px;
+}
+
+.admin_home_buttons li{
+
+margin:0px 20px;
+padding: 0px 20px;
+border:2px;
+color: red;
+}
+
+.button-align-right{
+    float: right;
+}
+
+.attempts_list{
+    text-align: center;
+}
+
+.home_login{
+float: right;
+padding:20px;
+margin: 20px;
+border: 2px solid #727272;
+}
+
+.nav > li>a.active{
+    font-style:bold;
+}
+
+span{
+    color: #5d5d96;
+}
+
+#menu_heading{
+    text-align:center;
+    font-weight: bold;
+}
+
+#heading_info{
+    text-align: center;
+    color:red;
+}
+
+.form-control{
+border-radius: 2px
+}
+
+#id_tags {
+border-radius: 0px
+}
+
+.messages >li{
+    text-align: center;
+}
+
+p[class$='_errors']{
+    text-align : center;
+    color : red;
+}
+
+#loader{
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+
+.errorlist{
+    color: red;
+}

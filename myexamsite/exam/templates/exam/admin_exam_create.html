@@ -1,0 +1,54 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<h3 id="menu_heading">Create Exam</h3></br>
+
+<form class="form-horizontal inputForm" action="{% url 'exam:admin-exam-create' %}" method="POST" accept-charset="utf-8">
+{% csrf_token %}
+
+{% for field in exam_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-4">
+		{{ field }}
+		<p>{{ field.errors }}</p>
+		</div>
+    </div>
+{% endfor %}
+ <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10 form-submit-button">
+
+<a class="btn btn-default" href="{% url 'exam:admin-exam' %}">Back</a>&nbsp;&nbsp;
+<button class="btn btn-default clear-all" type="reset">Clear</button>&nbsp;&nbsp;
+<button class="btn btn-success save-continue" type="submit">Save</button>&nbsp;&nbsp;
+
+</div>
+</div>
+</form>
+
+<script type="text/javascript">
+$("form").on("reset", function () {
+                var that = this;
+                setTimeout(function () {
+                    $(that).find("select").trigger("change");
+                }, 1);
+            });
+
+</script>
+
+{% endblock %}
+
+
+{# <label for="exam_name">Exam Name : </label>
+<input id="exam_name" type="text" name="exam_name" value="" required></br></br></br>
+{% if 'questions_list' %}
+<label for="questions_list">Select Questions : </label>
+ <select id="questions_list" multiple>
+ 	{% for question in questions_list %}
+  <option name="{{ question.id }}" value="{{ question.id }}">{{ question }}</option>
+  {% endfor %}
+</select>
+
+{% endif %}
+</br></br> #}

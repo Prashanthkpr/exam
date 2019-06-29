@@ -1,0 +1,882 @@
+{% extends "base.html" %}
+{% load paginate %}
+{% load humanize %}
+{% load inventoritag %}
+
+{#    <a href="{% url 'inventori:item_types' %}" class="btn btn-primary pull-right">Item Types#}
+{#    </a>#}
+{% block content %}
+    <div class="col-md-12 panel no-padding-on-mobile">
+        <div class="panel">
+            <div id="inventori-items" class="panel-body no-padding-on-mobile no-padding-bottom">
+                <span id="alert-messages" class="text-align-center" style="color:#45a2c9;font-size: 20pt"></span>
+
+                <h2>
+                    <div class="form-group pull-right">
+                        <a class="btn btn-default for-tooltip" title="Back to Items List."
+                           data-placement="bottom"
+                           onclick="window.location='{% url 'inventori:items' %}?active_side_bar_inventory_items=true'">
+                            <i class="fa fa-arrow-left"></i>
+                        </a>&nbsp;
+                        {% if request.user|has_perms:'inventori.add_item' %}
+                            <a class="btn btn-success" onclick="window.location='{% url 'inventori:create_item' %}'">
+                                <i class="fa fa-plus-circle"></i>
+                            </a>
+                        {% endif %}&nbsp;
+                        {% if request.user|has_perms:'inventori.delete_item' %}
+                            {% if item.inventorytnxitem_set.exists %}
+                                <button data-toggle="popover" data-html="true"
+                                        data-trigger="focus" data-placement="left" class="btn btn-danger "
+                                        data-content="This Item is has transactions cannot be deleted">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            {% elif item.variant_set.first.reservationitems_set.exists %}
+                                <button data-toggle="popover" data-html="true"
+                                        data-trigger="focus" data-placement="left" class="btn btn-danger "
+                                        data-content="This Item is reserved, cannot be deleted.">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            {% else %}
+                                <button data-toggle="popover" title="Confirm" data-html="true"
+                                        data-trigger="focus" data-placement="left" class="btn btn-danger "
+                                        data-content="Are you sure to delete? <a href='#' class='delete-this-item' item-id='{{ item.id }}'>Yes</a>">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                        &nbsp;
+                        {% if request.user|has_perms:'inventori.change_item' %}
+                            {% if request.user|is_in_group:'warehouse_employees' %}
+                            {% else %}
+                                <a href="#!" class="add-variant-submit btn btn-primary">
+                                    <i class="fa fa-save"></i>
+                                </a>
+                            {% endif %}
+                        {% endif %}
+
+
+                    </div>
+                </h2>
+                <form class="add-item-form" id="" method="post">
+                    <input type="hidden" name="item_id" value="{{ item.id }}"/>
+
+                    <div class="col-lg-12 no-padding-on-mobile">
+                        <div class="col-lg-6 no-padding-on-mobile">
+                            <div class="form-group" data="{{ item.name|capfirst }}">
+                                <input type="hidden" name="tenanent" value="{{ item.tenanent_id }}"/>
+                                <input type="hidden" name="item_type" value="{{ item.item_type.id }}"/>
+                                <input type="hidden" name="dealer" value="{{ item.dealer.id }}"/>
+                                <input type="hidden" name="category" value="{{ item.category }}">
+
+                                <div class="form-group">
+                                    <label for="id_item_number">
+                                        Number
+                                    </label>
+                                    <input class="form-control" id="id_item_number" maxlength="50" name="item_number"
+                                           value="{{ item.item_number }}" placeholder="Item Number" type="text"/>
+
+                                    <p class="item_number_error">{{ item_form.item_number.errors.as_text }}</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Name</label><br>
+                                    <input class="form-control update-item-name-input" type="text"
+                                           item-id="{{ item.id }}"
+                                           value="{{ item.name }}" actual="{{ item.name }}" name="name"/>
+
+                                    <p class="name_error">{{ item_form.name.errors.as_text }}</p>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Part Type</label>
+                                {{ item_form.item_type }}
+                                <p class="{{ item_form.item_type.name }}_error">{{ item_form.item_type.errors.as_text }}</p>
+                            </div>
+                            <div class="form-group" data="{{ item.name|capfirst }}">
+                                <label>Description</label><br>
+            <textarea class="update-item-description-input form-control col-sm-pull-4" cols="40" maxlength="500"
+                      rows="10" item-id="{{ item.id }}" style="height: 100px;" name="description"
+                      actual="{{ item.description }}">{{ item.description }}</textarea>
+                            </div>
+                            {% if item.item_type.attribute_set.count == 0 %}
+
+                                <div class="form-group" style="padding: 0px;">
+                                    <label>Net Weight</label>
+
+                                    <div class="input-group">
+                                        {{ net_weight_form.weight }}
+                                        <div class="input-group-btn">
+                                            {{ net_weight_form.unit }}
+                                        </div>
+                                    </div>
+                                    <p class="net_weight_error"{{ net_weight_form.errors }}></p>
+                                </div>
+                                <div class="form-group" style="padding: 0px">
+                                    <label>Gross Weight</label>
+
+                                    <div class="input-group">
+                                        {{ gross_weight_form.weight }}
+                                        <div class="input-group-btn">
+                                            {{ gross_weight_form.unit }}
+                                        </div>
+                                    </div>
+                                    <p class="gross_weight_error">{{ gross_weight_form.errors }}</p>
+                                </div>
+
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-6 no-padding-on-mobile">
+                            <div class="form-group margin-top-10px">
+                                <label>{{ item_form.active.label }}</label>
+                                <label class="switch">
+                                    {{ item_form.active }}
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <h5><b>Image</b></h5>
+                                {% if item.images %}
+                                    <img class="img-responsive"
+                                         src="{% item_image_url_prefix %}{{ item.images }}"
+                                         style="width: auto;max-height: 210px;" alt="No Images Available"/>
+                                {% else %}
+                                    {{ item_form.images }}
+                                    <p class="{{ item_form.images.name }}_error"></p>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <h5>
+                                    <label class="for-tooltip"
+                                           title="URL of the Item Brochure/Any file containing Item specifications.">
+                                        {{ item_form.files.label }} (URL)
+                                    </label>
+                                </h5>
+                                {{ item_form.files }}
+                                <p class="{{ item_form.files.name }}_error">{{ item_form.files.errors.as_text }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-lg-12 no-padding">Dimensions</label>
+
+                                <div class="col-lg-3 no-padding dimension-labels">
+                                    <label>Length</label>
+                                    {{ dimensions_form.length }}
+                                </div>
+                                <div class="col-lg-3 no-padding dimension-labels">
+                                    <label>Width</label>
+                                    {{ dimensions_form.width }}
+                                </div>
+                                <div class="col-lg-3 no-padding dimension-labels">
+                                    <label>Height</label>
+                                    {{ dimensions_form.height }}
+                                </div>
+                                <div class="col-lg-3 no-padding dimension-labels">
+                                    <label>Units</label>
+                                    {{ dimensions_form.unit }}
+                                    <p class="dimensions_error">{{ dimensions_form.errors }}</p>
+                                </div>
+                            </div>
+                            <div class="form-group margin-top-10px">
+                                <label>{{ variant_form.sku_code.label }}</label>
+                                {{ variant_form.sku_code }}
+                                <p class="{{ variant_form.sku_code.name }}_error"></p>
+                            </div>
+                            <div class="form-group margin-top-10px">
+                                <label class="text-align-right width-100-percent">{{ stock_form.quantity_per_carton.label }}</label>
+                                {{ stock_form.quantity_per_carton }}
+                                <p class="{{ stock_form.quantity_per_carton.name }}_error"></p>
+                            </div>
+                            <div class="form-group margin-top-10px">
+                                <label class="text-align-right width-100-percent">{{ stock_form.cartons_per_pallet.label }}</label>
+                                {{ stock_form.cartons_per_pallet }}
+                                <p class="{{ stock_form.cartons_per_pallet.name }}_error"></p>
+                            </div>
+                            <div class="form-group margin-top-10px">
+                                <label class="text-align-right">Price</label>
+                                <span class="item-price"> <span
+                                        class="currency_symbol"> $ </span> {{ item.price }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <table class="table table-responsive table-mailbox remove-left-right-padding inventory-transactions-table">
+                    <thead>
+                    <th>
+                        Warehouse
+                    </th>
+                    <th class="text-align-right">
+                        Stock
+                    </th>
+                    <th class="text-align-right">
+                        Re-Order Quantity
+                    </th>
+                    </thead>
+                    <tbody>
+                    {% for stock_obj in stock_objects %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'orders:update_warehouse' stock_obj.warehouse.id %}?active_side_bar_warehouses=true&active_side_bar_settings=true"
+                                   target="_blank">
+                                    {{ stock_obj.warehouse }} ( {{ stock_obj.warehouse.code }} )
+                                </a>
+                            </td>
+                            <td class="text-align-right"><span
+                                    class="warehouse-stock">{{ stock_obj.quantity|floatformat|intcomma }}</span></td>
+                            <td class="text-align-right"><input type="number"
+                                                                class="form-control float-right re-order-quantity"
+                                                                name="reorder-quantity"
+                                                                stock-id="{{ stock_obj.id }}"
+                                                                value="{{ stock_obj.reorder_quantity|floatformat }}"
+                                                                placeholder="Re-Order Quantity"/></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    </tbody>
+                </table>
+                <div class="col-lg-12 no-padding">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a class="get-quotations" data-toggle="collapse" data-parent="#accordion"
+                                   href="#quotations">
+                                    Quotations
+                                    <span class="fa fa-angle-down float-right"></span>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div id="quotations" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <div class="inner-loading-gif" style="display: none;"></div>
+                                <div class="quotations-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12 no-padding">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a class="get-sales-orders" data-toggle="collapse" data-parent="#accordion"
+                                   href="#sales-orders">
+                                    Orders
+                                    <span class="fa fa-angle-down float-right"></span>
+                                </a>
+                            </h4>
+                        </div>
+                        <div id="sales-orders" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <div class="inner-loading-gif" style="display: none;"></div>
+                                <div class="sales-orders-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12 no-padding">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a class="get-inwards" data-toggle="collapse" data-parent="#accordion"
+                                   href="#item-inwards-list">
+                                    Inwards
+                                    <span class="fa fa-angle-down float-right"></span>
+                                </a>
+                            </h4>
+                        </div>
+                        <div id="item-inwards-list" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <div class="inner-loading-gif" style="display: none;"></div>
+                                <div class="inwards-container"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="col-lg-12 no-padding">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a class="get-outwards" data-toggle="collapse" data-parent="#accordion"
+                                   href="#item-outwards-list">
+                                    Outwards
+                                    <span class="fa fa-angle-down float-right"></span>
+                                </a>
+                            </h4>
+                        </div>
+                        <div id="item-outwards-list" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <div class="inner-loading-gif" style="display: none;"></div>
+                                <div class="outwards-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .panel-default > .panel-heading {
+            box-shadow: 0 0 5px 1px #e7e7e7;
+            border: 0px;
+            background: cadetblue;
+        }
+
+        #quotations .panel-default > .panel-heading + .panel-collapse > .panel-body, #sales-orders .panel-default > .panel-heading + .panel-collapse > .panel-body, #item-inwards-list .panel-default > .panel-heading + .panel-collapse > .panel-body, #item-outwards-list .panel-default > .panel-heading + .panel-collapse > .panel-body {
+            border: #93b7b8 1px solid;
+        }
+
+        #quotations .panel-body, #sales-orders .panel-body, #item-inwards-list .panel-body, #item-outwards-list .panel-body {
+            box-shadow: 0px 3px 8px 2px #e4e4e4;
+            border: cadetblue solid 1px;
+        }
+
+        .panel-title > .small, .panel-title > .small > a, .panel-title > a, .panel-title > small, .panel-title > small > a, .panel-title > .small, .panel-title > .small > a, .panel-title > a, .panel-title > small, .panel-title > small > a:active, .panel-title > .small, .panel-title > .small > a, .panel-title > a, .panel-title > small, .panel-title > small > a:hover, .panel-title > .small, .panel-title > .small > a, .panel-title > a, .panel-title > small, .panel-title > small > a:visited {
+            color: white;
+        }
+
+        .get-quotations, .get-sales-orders, .get-inwards, .get-outwards {
+            display: block;
+            width: 100%
+        }
+
+        .warehouse-stock {
+            color: #41d143;
+        }
+
+        .item-price {
+            color: #689a9c;
+            font-size: 14pt;
+        }
+
+        .text-align-center th {
+            text-align: center;
+        }
+
+        .switch {
+            top: 6px;
+            left: 13px;
+        }
+
+        .table-fixed-head {
+            position: fixed;
+            z-index: 99;
+            top: 0;
+            background: white;
+            box-shadow: 1px 1px 3px 0px #a2a2a2;
+        }
+        .warehouse_filter_pill {
+            padding: 10px 10px;
+        }
+
+        @media screen and (max-width: 600px) {
+            .side-margin {
+                margin: 0px;
+            }
+        }
+
+        .download-quotation-button {
+            display: none;
+        }
+
+        /*css for hover options for list of items every index pages */
+        .stock-receipts {
+            right: -150px;
+            top: -7px;
+            opacity: 0;
+            z-index: 1;
+            position: absolute;
+            display: none;
+            background: white;
+            box-shadow: 5px 0px 6px 0px #d4cece;
+            padding: 0px 4px;
+        }
+
+        .stock-receipt {
+            display: inline-flex;
+            padding: 10px;
+            color: olivedrab;
+            max-height: 36px;
+            vertical-align: middle;
+        }
+
+        .stock-receipt-header {
+            display: inline-flex;
+            padding: 10px;
+            color: olivedrab;
+            max-height: 36px;
+            vertical-align: middle;
+        }
+
+        .show-stock-receipts-on-hover {
+            width: 100%;
+            display: block;
+            position: relative;
+        }
+
+        {#        .show-stock-receipts-on-hover:hover .stock-receipts {#}
+        {#            -webkit-animation-name: example; /* Safari 4.0 - 8.0 */#}
+        {#            -webkit-animation-duration: 0.5s; /* Safari 4.0 - 8.0 */#}
+        {#            animation-name: example;#}
+        {#            animation-duration: 0.5s;#}
+        {#            right: -150px;#}
+        {#            opacity: 1;#}
+        {#        }#}
+
+        /* Safari 4.0 - 8.0 */
+        @-webkit-keyframes example {
+            from {
+                right: -125px;
+                opacity: 0;
+            }
+            to {
+                right: -150px;
+                opacity: 1;
+            }
+        }
+
+        /* Standard syntax */
+        @keyframes example {
+            from {
+                right: -125px;
+                opacity: 0;
+            }
+            to {
+                right: -150px;
+                opacity: 1;
+            }
+        }
+
+        .toggle-for-quotation-option {
+            opacity: 1;
+            display: inline-block;
+        }
+
+        .btn {
+            padding: 4px 10px;
+            border: 0px;
+        }
+
+        td, th {
+            padding-right: 0px !important;
+        }
+
+        .inner-loading-gif {
+            height: 100px;
+            margin: 5%;
+        }
+
+        #id_dimension_unit {
+            width: 100%
+        }
+
+        .dimension-labels > label {
+            width: 100%;
+            text-align: right;
+        }
+
+        .width-100-percent {
+            width: 100%;
+        }
+
+        .warehouse_list{
+            margin :10px;
+            border:10px;
+            }
+    </style>
+    <script>
+        $(window).on('load', function () {
+            {% if request.GET.to_quotes %}
+                $('.get-quotations').trigger('click')
+            {% endif %}
+            {% if request.GET.to_orders %}
+                $('.get-sales-orders').trigger('click')
+            {% endif %}
+            {% if request.GET.to_inwards %}
+                $('.get-inwards').trigger('click')
+            {% endif %}
+        });
+        re_order_quantities = {}
+        {% for stock_obj in stock_objects %}
+            re_order_quantities[{{ stock_obj.id }}]={{ stock_obj.reorder_quantity }}
+        {% endfor %}
+        $('body').on('click', '.edit-this-variant', function (e) {
+            e.preventDefault();
+            $(this).closest('tr.readonly-row').hide().next().fadeIn()
+        });
+        $('body').on('click', '.update-this-variant', function (e) {
+            e.preventDefault();
+            $(".loading").fadeIn("slow");
+            $.post('{% url "inventori:update_variant" %}',
+                    data = {data: JSON.stringify(edit_this_variant)},
+                    function (data, status, xhr) {
+                        if (status == 'success') {
+                            if (data == 'ok') {
+                                get_item_variants(filterdata)
+                            } else if (data == 'sku_code') {
+                                notify_this('Please Enter Sku Code.', 'warning')
+                                $('.variant-sku-code').focus()
+                                $('.sku_code_error').slideDown()
+                                setTimeout(function () {
+                                    $('.sku_code_error').slideUp()
+                                }, 4000)
+                            }
+                            else {
+                                alert('We Regret, there is an issue!! Try again.')
+                                {#                                window.location = '/';#}
+                                console.log('Something Went Wrong!!!')
+                            }
+                        }
+                        if (status == 'error') {
+                            console.log(jqXhr);
+                            if (data['error'] == 'Something Went Wrong!!!') {
+                                alert('We Regret, there is an issue!! Try again.')
+                                {#                                window.location = '/';#}
+                                console.log('Something Went Wrong!!!')
+                            }
+                        }
+                        else {
+                            console.log(status)
+                        }
+                        $('.loading').fadeOut()
+                    });
+            {#            $(this).closest('tr.edit-variant-row').hide().prev().fadeIn()#}
+            {#            get_item_variants(filterdata)#}
+        });
+        $('body').on('click', '.get-quotations', function (e,warehouse_id='all') {
+            get_quotations(warehouse_id)
+
+        })
+        function get_quotations(warehouse_id){
+            $('.quotations-container').html('').hide()
+            $('#quotations').find('.inner-loading-gif').fadeIn()
+            $.post("{% url 'inventori:filter_quotations' %}", {
+                'item_id': {{ item.id|default:1 }},
+                'warehouse_id': warehouse_id,
+                "no_fixed_table_head": true,
+                "from_item_details": true
+            }, function (data) {
+                $('#quotations').find('.inner-loading-gif').fadeOut(function () {
+                    $('.quotations-container').html(data).show()
+
+                    $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                    if(warehouse_id=='all'){
+                    $('.get-quotations').find('span').toggleClass('fa fa-angle-down fa fa-angle-up')
+                    }else{
+
+                    }
+                })
+            });
+        }
+        $('body').on('click', '.get-sales-orders', function (e,warehouse_id='all') {
+            get_sales_orders(warehouse_id)
+            })
+            function get_sales_orders(warehouse_id){
+            $('.sales-orders-container').html('').hide()
+            $('#sales-orders').find('.inner-loading-gif').fadeIn()
+            $.post("{% url 'inventori:filter_sales_orders' %}", {
+                'item_id': {{ item.id|default:1 }},
+                'warehouse_id': warehouse_id,
+                "no_fixed_table_head": true,
+                "from_item_details": true
+            }, function (data) {
+                $('#sales-orders').find('.inner-loading-gif').fadeOut(function () {
+                    $('.sales-orders-container').html(data).show()
+                    $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                    if(warehouse_id=='all'){
+                    $('.get-sales-orders').find('span').toggleClass('fa fa-angle-down fa fa-angle-up')
+                    }else{
+
+                    }
+                })
+            });
+        }
+        $('body').on('click', '.get-inwards', function (e,warehouse_id='all') {
+             get_inwards(warehouse_id)
+        })
+        function get_inwards(warehouse_id){
+            $('.inwards-container').html('').hide()
+            $('#item-inwards-list').find('.inner-loading-gif').fadeIn()
+            $.post("{% url 'inventori:filter_inwards' %}", {
+                'item_id': {{item.id|default:1 }},
+                'warehouse_id': warehouse_id,
+                "no_fixed_table_head": true,
+                "from_item_details": true
+            }, function (data) {
+                $('#item-inwards-list').find('.inner-loading-gif').fadeOut(function () {
+                    $('.inwards-container').html(data).show()
+                    $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                    if(warehouse_id=='all'){
+                    $('.get-inwards').find('span').toggleClass('fa fa-angle-down fa fa-angle-up')
+                    }else{
+
+                    }
+                })
+            });
+       }
+        $('body').on('click', '.get-outwards', function (e,warehouse_id='all') {
+        get_outwards(warehouse_id)
+        })
+           function get_outwards(warehouse_id){
+            $('.outwards-container').html('').hide()
+            $('#item-outwards-list').find('.inner-loading-gif').fadeIn()
+            $.post("{% url 'inventori:filter_outwards' %}", {
+                'item_id': {{ item.id|default:1 }},
+                'warehouse_id': warehouse_id,
+                "no_fixed_table_head": true,
+                "from_item_details": true
+            }, function (data) {
+                $('#item-outwards-list').find('.inner-loading-gif').fadeOut(function () {
+                    $('.outwards-container').html(data).show()
+                    $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                    if(warehouse_id=='all'){
+                    $('.get-outwards').find('span').toggleClass('fa fa-angle-down fa fa-angle-up')
+                    }else{
+
+                    }
+                })
+            });
+        }
+        $('body').on('click', '.delete-this-quotation', function (e) {
+            e.preventDefault()
+            if ($(this).attr('data-url')) {
+                var delete_confirmation = confirm('Are you sure?')
+                if (delete_confirmation) {
+                    $('.loading').fadeIn()
+                    window.location = $(this).attr('data-url')
+                }
+            }
+        })
+        $('body').on('click', '.download-this-quotation', function (e) {
+            e.preventDefault()
+            var url = $(this).attr('data-url')
+            if (url) {
+                $.get(url, function (data) {
+                    if (data['url']) {
+                        $('.download-quotation-button').attr('href', data['url']).attr('download', '')
+                        document.getElementsByClassName('download-quotation-button')[0].click()
+                    }
+                });
+            }
+        })
+        $('body').on('click', '.clone-quotation', function (e) {
+            e.preventDefault()
+            if ($(this).attr('max-quotations-reached') == 'true') {
+                snackit('Maximum versions reached for this Quotation. Please create a new Quotation.')
+            } else {
+                window.location = $(this).attr('data-url')
+            }
+        })
+
+        $('body').on('click', '.show-options-on-click', function (e) {
+            $(this).find('.stock-receipts').toggleClass('toggle-for-quotation-option')//.css({'opacity': 1, 'display': 'inline-block'})
+        })
+        $('body').on('mouseleave', '.show-options-on-click', function (e) {
+            $(this).find('.stock-receipts').removeClass('toggle-for-quotation-option')//.css({'opacity': 0, 'display': 'none'})
+        })
+        $('body').on('click', '.quotations-container ul.pagination>li>a[rel="page"]', function (e) {
+            e.preventDefault()
+            var warehouse_id = $('.warehouse_list').attr('present-warehouse-id')
+            the_url = $(this).attr('href')
+
+            if (the_url) {
+                $('.quotations-container').html('').hide()
+                $('#quotations').find('.inner-loading-gif').fadeIn()
+                $.post(the_url, {
+                    'item_id': {{ item.id|default:1 }},
+                     'warehouse_id': warehouse_id,
+                      "no_fixed_table_head": true,
+                    "from_item_details": true
+                }, function (data) {
+                    $('#quotations').find('.inner-loading-gif').fadeOut(function () {
+                        $('.quotations-container').html(data).show()
+                        $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                    })
+                });
+            }
+        })
+        $('body').on('click', '.sales-orders-container ul.pagination>li>a[rel="page"]', function (e) {
+            e.preventDefault()
+            the_url = $(this).attr('href')
+            var warehouse_id = $('.warehouse_list').attr('present-warehouse-id')
+            console.log(warehouse_id)
+            if (the_url) {
+                $('.sales-orders-container').html('').hide()
+                $('#sales-orders').find('.inner-loading-gif').fadeIn()
+                $.post(the_url, {
+                    'item_id': {{ item.id|default:1 }},
+                    'warehouse_id': warehouse_id,
+                    "no_fixed_table_head": true,
+                    "from_item_details": true
+                }, function (data) {
+                    $('#sales-orders').find('.inner-loading-gif').fadeOut(function () {
+                        $('.sales-orders-container').html(data).show()
+                        $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+
+                    })
+                });
+            }
+        })
+        $('body').on('click', '.inwards-container ul.pagination>li>a[rel="page"]', function (e) {
+            e.preventDefault()
+            the_url = $(this).attr('href')
+            var warehouse_id = $('.warehouse_list').attr('present-warehouse-id')
+            console.log(the_url,warehouse_id)
+            if (the_url) {
+                $('.inwards-container').html('').hide()
+                $('#inwards').find('.inner-loading-gif').fadeIn()
+                $.post(the_url, {
+                    'item_id': {{ item.id|default:1 }},
+                    'warehouse_id': warehouse_id,
+                    "no_fixed_table_head": true,
+                    "from_item_details": true
+                }, function (data) {
+                    $('#inwards').find('.inner-loading-gif').fadeOut(function () {
+                        $('.inwards-container').html(data).show()
+                        $('.show-stock-receipts-on-hover a').attr('target', '_blank')
+                        
+                    })
+                });
+            }
+        })
+
+        <!--$('body').on('click', '.outwards-container ul.pagination>li>a[rel="page"]', function (e) {-->
+            <!--e.preventDefault()-->
+            <!--the_url = $(this).attr('href')-->
+            <!--var warehouse_id = $('.warehouse_list').attr('present-warehouse-id')-->
+            <!--console.log(warehouse_id)-->
+            <!--if (the_url) {-->
+                <!--$('.outwards-container').html('').hide()-->
+                <!--$('#outwards').find('.inner-loading-gif').fadeIn()-->
+                <!--$.post(the_url, {-->
+                    <!--'item_id': {{ item.id|default:1 }},-->
+                    <!--'warehouse_id': warehouse_id,-->
+                    <!--"no_fixed_table_head": true,-->
+                    <!--"from_item_details": true-->
+                <!--}, function (data) {-->
+                    <!--$('#outwards').find('.inner-loading-gif').fadeOut(function () {-->
+                        <!--$('.outwards-container').html(data).show()-->
+                        <!--$('.show-stock-receipts-on-hover a').attr('target', '_blank')-->
+
+                    <!--})-->
+                <!--});-->
+            <!--}-->
+        <!--})-->
+
+        $('body').on('click', '.add-variant-submit', function (e) {
+            e.preventDefault();
+            $('.loading').fadeIn()
+            data = $('.add-item-form').serialize()
+            var the_form_data = new FormData($('.add-item-form')[0])
+            the_form_data.append('re_order_quantities', JSON.stringify(re_order_quantities))
+            $.ajax({
+                url: '{% url 'inventori:update_item' %}',
+                type: 'POST',
+                {#                            data: serialized_data,#}
+                data: the_form_data,
+                success: function (data, status, xhr) {
+                    if (status == 'success') {
+                        if (data == 'notok') {
+                            alert('We Regret, there is an issue!! Try again.')
+                            window.location = '/';
+                            console.log('Something Went Wrong!!!')
+                        }
+                        else if (data == 'ok') {
+                            window.location = '.' + '?active_side_bar_inventory_items=true'
+                        }
+                        else {
+                            console.log(data)
+                            for (a in data['variant']) {
+                                $('.' + a + "_error").text(data['variant'][a]).slideDown();
+                                $('.' + a + "_error").css("color", "#d65e6d");
+
+                            }
+                            for (a in data['item']) {
+                                $('.' + a + "_error").text(data['item'][a]).slideDown();
+                                $('.' + a + "_error").css("color", "#d65e6d");
+
+                            }
+                            for (a in data['stock']) {
+                                $('.' + a + "_error").text(data['stock'][a]).slideDown();
+                                $('.' + a + "_error").css("color", "#d65e6d");
+
+                            }
+                            for (a in data['net_weight']) {
+                                $(".net_weight_error").text(data['net_weight'][a]).slideDown().css("color", "#d65e6d");
+                            }
+                            for (a in data['gross_weight']) {
+                                $(".gross_weight_error").text(data['gross_weight'][a]).slideDown().css("color", "#d65e6d");
+                            }
+                            for (a in data['dimensions']) {
+                                $(".dimensions_error").text(data['dimensions'][a]).slideDown().css("color", "#d65e6d");
+                                $('#id_' + a).css("border-color", "#d65e6d");
+
+                            }
+                            setTimeout(function () {
+                                $('p[class$=_error]').hide('blind', {}, 500)
+                            }, 5000);
+                        }
+                    }
+                    if (status == 'error') {
+                        console.log(jqXhr);
+                        if (data['error'] == 'Something Went Wrong!!!') {
+                            alert('We Regret, there is an issue!! Try again.')
+                            window.location = '/';
+                            console.log('Something Went Wrong!!!')
+                        }
+                    }
+                    else {
+                        console.log(status)
+                    }
+                    $('.loading').fadeOut()
+                },
+                cache: false,
+                mimeTypes: 'multipart/form-data',
+                contentType: false,
+                processData: false
+            });
+        });
+        $('body').on('blur', '.re-order-quantity', function (e) {
+            e.preventDefault();
+            if ($(this).val() && $.isNumeric($(this).val())) {
+                re_order_quantities[$(this).attr('stock-id')] = $(this).val()
+            } else {
+                re_order_quantities[$(this).attr('stock-id')] = 0
+                $(this).val(0)
+            }
+        })
+        {% if request.user|is_in_group:'warehouse_employees' %}
+            $('input,textarea,select').attr('disabled', 'disabled').attr('readonly', 'readonly')
+        {% endif %}
+        $('body').on('click', '.delete-this-item', function (e) {
+            e.preventDefault()
+            var item_id = $(this).attr('item-id')
+            $.post("{% url 'inventori:delete_item' %}",
+                    data = {'item_id': item_id},
+                    function (data, status, xhr) {
+                        if (status == 'success') {
+                            if (data == 'ok') {
+                                window.location = '.';
+                            }
+                            else {
+                                console.log(data)
+                                alert('We Regret, there is an issue!! Try again.')
+                                window.location = '.';
+                                console.log('Something Went Wrong!!!')
+                            }
+                        }
+                        if (status == 'error') {
+                            console.log(jqXhr);
+                            if (data['error'] == 'Something Went Wrong!!!') {
+                                alert('We Regret, there is an issue!! Try again.')
+                                window.location = '/';
+                                console.log('Something Went Wrong!!!')
+                            }
+                        }
+                        else {
+                            console.log(status)
+                        }
+                    }
+            );
+        });
+    </script>
+{% endblock %}

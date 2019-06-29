@@ -1,0 +1,65 @@
+{% extends 'exam/admin-base.html' %}
+
+{% block content %}
+
+<h3 id="menu_heading">Assignment Updation</h3></br>
+<form class="form-horizontal inputForm" action="" method="POST" accept-charset="utf-8" >
+{% csrf_token %}
+{% for field in assignment_form %}
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="field">{{ field.label }} {{ form.errors }}</label>
+      <div class="col-sm-4">
+		{{ field }}
+		<p>{{ field.errors }}</p>
+		</div>
+    </div>
+{% endfor %}
+
+<div class="form-group">
+ <div class="col-sm-offset-2 col-sm-10 form-submit-button">
+
+<a class="btn btn-default" href="{% url 'exam:admin-assignment' %}">Back</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<button class="btn btn-success save-continue" type="submit">Save Changes</button>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="{% url 'exam:admin-assignment-result' id=assignment_form.instance.id %}">Answer Sheet</a>
+</div>
+</div>
+</form>
+
+<div class="attempts_list">
+{% if attempts %}
+<h4 id="menu_heading">Attempts List</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>No.</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for attempt in attempts %}
+        <tr>
+            <td>{{ forloop.counter }} .</td>
+            <td>{{ attempt.start_time }}</td>
+            <td>{{ attempt.end_time|default_if_none:'---' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<h4 id="menu_heading">No Attempts</h4>
+{% endif %}
+</div>
+
+<script type="text/javascript">
+$("form").on("reset", function () {
+                var that = this;
+                setTimeout(function () {
+                    $(that).find("select").trigger("change");
+                }, 1);
+            });
+
+</script>
+
+{% endblock %}
